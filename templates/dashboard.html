@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="FanFlow AI Ops Dashboard — Real-time crowd management and AI-powered operational intelligence for FIFA World Cup 2026 stadium staff.">
+  <title>FanFlow AI — Staff Operations Dashboard</title>
+  <link rel="stylesheet" href="/static/css/base.css">
+  <link rel="stylesheet" href="/static/css/dashboard.css">
+</head>
+<body>
+  <!-- Skip navigation link -->
+  <a href="#main-content" class="skip-link">Skip to main content</a>
+
+  <!-- ═══ Header ═══ -->
+  <header class="app-header" role="banner">
+    <div class="app-header__brand">
+      <div class="app-header__logo" aria-hidden="true">⚽</div>
+      <div>
+        <div class="app-header__title">FanFlow AI</div>
+        <div class="app-header__subtitle">Operations Dashboard</div>
+      </div>
+    </div>
+    <nav class="app-header__nav" aria-label="Main navigation">
+      <a href="/" class="app-header__nav-link" id="nav-fan">Fan Assistant</a>
+      <a href="/dashboard" class="app-header__nav-link app-header__nav-link--active" id="nav-dashboard" aria-current="page">Staff Dashboard</a>
+    </nav>
+  </header>
+
+  <!-- ═══ Main Content ═══ -->
+  <main id="main-content" class="dashboard-layout" role="main">
+
+    <!-- Controls -->
+    <section class="dashboard-controls" aria-label="Dashboard controls">
+      <div class="dashboard-controls__left">
+        <div class="control-group">
+          <label for="dash-stadium-select" class="control-label">Stadium</label>
+          <select id="dash-stadium-select" class="control-select" aria-label="Select stadium">
+            <!-- Populated by JS -->
+          </select>
+        </div>
+      </div>
+      <div class="dashboard-controls__right">
+        <div class="dashboard-controls__status">
+          <span class="status-dot" aria-hidden="true"></span>
+          <span>Live data</span>
+        </div>
+        <span id="last-updated" class="dashboard-controls__status" aria-live="polite">
+          Updated: --
+        </span>
+      </div>
+    </section>
+
+    <!-- Overview Cards -->
+    <section class="overview-panel" aria-label="Crowd overview">
+      <article class="overview-card" id="card-density">
+        <span class="overview-card__label">Overall Density</span>
+        <span class="overview-card__value" id="overall-density">--</span>
+        <span class="overview-card__meta">
+          Status: <span id="overall-status-badge" class="badge badge--green">
+            <span class="badge__dot" aria-hidden="true"></span>
+            <span id="overall-status-text">OK</span>
+          </span>
+        </span>
+      </article>
+      <article class="overview-card" id="card-gates">
+        <span class="overview-card__label">Active Gates</span>
+        <span class="overview-card__value" id="active-gates">--</span>
+        <span class="overview-card__meta">Monitoring in real-time</span>
+      </article>
+      <article class="overview-card" id="card-incidents">
+        <span class="overview-card__label">Active Incidents</span>
+        <span class="overview-card__value" id="active-incidents-count">0</span>
+        <span class="overview-card__meta">Unresolved reports</span>
+      </article>
+      <article class="overview-card" id="card-stadium-name">
+        <span class="overview-card__label">Venue</span>
+        <span class="overview-card__value overview-card__value--sm" id="stadium-name-display">--</span>
+        <span class="overview-card__meta" id="stadium-city-display">--</span>
+      </article>
+    </section>
+
+    <!-- Gates Grid -->
+    <section class="gates-section" aria-label="Gate status">
+      <h2 class="gates-section__title">
+        <span aria-hidden="true">🚪</span>
+        Gate Congestion Status
+      </h2>
+      <div class="gates-grid" id="gates-grid" role="list">
+        <!-- Populated by JS -->
+      </div>
+    </section>
+
+    <!-- Incidents Panel -->
+    <section class="panel-section" aria-label="Incident reports">
+      <h2 class="panel-section__title">
+        <span aria-hidden="true">🚨</span>
+        Active Incidents
+      </h2>
+      <div
+        class="panel-section__content"
+        id="incidents-feed"
+        role="log"
+        aria-live="assertive"
+        aria-label="Incident feed"
+      >
+        <div class="empty-state" id="incidents-empty">
+          <div class="empty-state__icon" aria-hidden="true">✅</div>
+          <p>No active incidents</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- AI Recommendations Panel -->
+    <section class="panel-section" aria-label="AI recommendations">
+      <h2 class="panel-section__title">
+        <span aria-hidden="true">🤖</span>
+        AI Recommendations
+      </h2>
+      <div
+        class="panel-section__content"
+        id="recommendations-feed"
+        aria-live="polite"
+        aria-label="AI-generated recommendations"
+      >
+        <div class="empty-state" id="recommendations-empty">
+          <div class="empty-state__icon" aria-hidden="true">💡</div>
+          <p>Click "Analyze" to generate AI-powered recommendations</p>
+        </div>
+      </div>
+      <button
+        class="btn btn--primary analyze-btn"
+        id="analyze-btn"
+        type="button"
+        aria-label="Generate AI analysis of current crowd conditions"
+      >
+        <span aria-hidden="true">🧠</span>
+        Analyze Crowd Conditions
+      </button>
+    </section>
+
+  </main>
+
+  <!-- ═══ Footer ═══ -->
+  <footer role="contentinfo" class="sr-only">
+    <p>FanFlow AI Operations Dashboard — FIFA World Cup 2026. For authorized staff only.</p>
+  </footer>
+
+  <script src="/static/js/dashboard.js"></script>
+</body>
+</html>

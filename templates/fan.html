@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="FanFlow AI — Your multilingual AI assistant for FIFA World Cup 2026 stadium navigation, accessibility, and venue information.">
+  <title>FanFlow AI — FIFA World Cup 2026 Stadium Assistant</title>
+  <link rel="stylesheet" href="/static/css/base.css">
+  <link rel="stylesheet" href="/static/css/fan.css">
+</head>
+<body>
+  <!-- Skip navigation link for keyboard/screen reader users -->
+  <a href="#main-content" class="skip-link">Skip to main content</a>
+
+  <!-- ═══ Header ═══ -->
+  <header class="app-header" role="banner">
+    <div class="app-header__brand">
+      <div class="app-header__logo" aria-hidden="true">⚽</div>
+      <div>
+        <div class="app-header__title" id="app-title">FanFlow AI</div>
+        <div class="app-header__subtitle" id="app-subtitle">FIFA World Cup 2026 Stadium Assistant</div>
+      </div>
+    </div>
+    <nav class="app-header__nav" aria-label="Main navigation">
+      <a href="/" class="app-header__nav-link app-header__nav-link--active" id="nav-fan" aria-current="page">Fan Assistant</a>
+      <a href="/dashboard" class="app-header__nav-link" id="nav-dashboard">Staff Dashboard</a>
+    </nav>
+  </header>
+
+  <!-- ═══ Main Content ═══ -->
+  <main id="main-content" class="fan-layout" role="main">
+
+    <!-- Controls bar -->
+    <section class="fan-controls" aria-label="Chat settings">
+      <div class="fan-controls__group">
+        <div class="control-group">
+          <label for="language-select" class="control-label" id="language-label">Language</label>
+          <select id="language-select" class="control-select" aria-labelledby="language-label">
+            <option value="en">English</option>
+            <option value="es">Español</option>
+            <option value="fr">Français</option>
+            <option value="ar">العربية</option>
+            <option value="pt">Português</option>
+            <option value="de">Deutsch</option>
+          </select>
+        </div>
+        <div class="control-group">
+          <label for="stadium-select" class="control-label" id="stadium-label">Stadium</label>
+          <select id="stadium-select" class="control-select" aria-labelledby="stadium-label">
+            <!-- Populated by JS -->
+          </select>
+        </div>
+      </div>
+    </section>
+
+    <!-- Chat feed -->
+    <section
+      id="chat-feed"
+      class="chat-area"
+      role="log"
+      aria-label="Chat messages"
+      aria-live="polite"
+      aria-atomic="false"
+      aria-relevant="additions"
+    >
+      <!-- Welcome card (shown initially) -->
+      <div class="welcome-card" id="welcome-card">
+        <div class="welcome-card__icon" aria-hidden="true">🏟️</div>
+        <h1 class="welcome-card__title" id="welcome-title">Welcome to FanFlow AI</h1>
+        <p class="welcome-card__text" id="welcome-text">
+          I'm your FIFA World Cup 2026 stadium assistant. Ask me about directions,
+          accessibility, gates, transport, or anything else about the venue.
+        </p>
+      </div>
+    </section>
+
+    <!-- Typing indicator -->
+    <div
+      class="typing-indicator"
+      id="typing-indicator"
+      role="status"
+      aria-label="AI is typing"
+    >
+      <span class="typing-indicator__dot" aria-hidden="true"></span>
+      <span class="typing-indicator__dot" aria-hidden="true"></span>
+      <span class="typing-indicator__dot" aria-hidden="true"></span>
+      <span class="sr-only" id="loading-message">Thinking...</span>
+    </div>
+
+    <!-- Quick action buttons -->
+    <section class="quick-actions" aria-label="Quick actions">
+      <button class="quick-actions__btn" data-query="Where is the nearest restroom?" id="qa-restroom" type="button">
+        <span class="quick-actions__icon" aria-hidden="true">🚻</span>
+        <span id="qa-restroom-text">Nearest restroom</span>
+      </button>
+      <button class="quick-actions__btn" data-query="What accessible routes are available? I use a wheelchair." id="qa-accessible" type="button">
+        <span class="quick-actions__icon" aria-hidden="true">♿</span>
+        <span id="qa-accessible-text">Accessible routes</span>
+      </button>
+      <button class="quick-actions__btn" data-query="What gates are available and how do I find them?" id="qa-gates" type="button">
+        <span class="quick-actions__icon" aria-hidden="true">🚪</span>
+        <span id="qa-gates-text">Gate information</span>
+      </button>
+      <button class="quick-actions__btn" data-query="Where can I find food and drinks nearby?" id="qa-food" type="button">
+        <span class="quick-actions__icon" aria-hidden="true">🍔</span>
+        <span id="qa-food-text">Food &amp; drinks</span>
+      </button>
+      <button class="quick-actions__btn" data-query="What transport options are available to get to and from the stadium?" id="qa-transport" type="button">
+        <span class="quick-actions__icon" aria-hidden="true">🚌</span>
+        <span id="qa-transport-text">Transport options</span>
+      </button>
+      <button class="quick-actions__btn" data-query="Where are the quiet zones or sensory rooms?" id="qa-quiet" type="button">
+        <span class="quick-actions__icon" aria-hidden="true">🤫</span>
+        <span id="qa-quiet-text">Quiet zones</span>
+      </button>
+    </section>
+
+    <!-- Chat input -->
+    <section class="chat-input-area" aria-label="Message input">
+      <div class="chat-input-wrapper">
+        <label for="chat-input" class="sr-only">Type your message</label>
+        <textarea
+          id="chat-input"
+          class="chat-input"
+          placeholder="Ask me about the stadium, directions, accessibility..."
+          rows="1"
+          maxlength="2000"
+          aria-label="Type your message"
+        ></textarea>
+      </div>
+      <button
+        id="chat-send-btn"
+        class="chat-send-btn"
+        type="button"
+        aria-label="Send message"
+      >
+        ➤
+      </button>
+    </section>
+
+    <!-- Map container (visually hidden by default) -->
+    <section id="map-section" aria-label="Interactive Stadium Map" style="display: none; height: 300px; width: 100%; margin-top: 1rem; border-radius: 8px; overflow: hidden;">
+      <div id="map" style="height: 100%; width: 100%;"></div>
+    </section>
+
+  </main>
+
+  <!-- ═══ Footer ═══ -->
+  <footer role="contentinfo" class="sr-only">
+    <p>FanFlow AI — FIFA World Cup 2026 Stadium Operations. Powered by Generative AI.</p>
+  </footer>
+
+  <script src="/static/js/fan.js?v=4"></script>
+  {% if maps_api_key %}
+  <script>
+    (g=>{var h,a,k,p="The Google Maps JavaScript API",c="google",l="importLibrary",q="__ib__",m=document,b=window;b=b[c]||(b[c]={});var d=b.maps||(b.maps={}),r=new Set,e=new URLSearchParams,u=()=>h||(h=new Promise(async(f,n)=>{await (a=m.createElement("script"));e.set("libraries",[...r]+"");for(k in g)e.set(k.replace(/[A-Z]/g,t=>"_"+t[0].toLowerCase()),g[k]);e.set("callback",c+".maps."+q);a.src=`https://maps.${c}apis.com/maps/api/js?`+e;d[q]=f;a.onerror=()=>h=n(Error(p+" could not load."));a.nonce=m.querySelector("script[nonce]")?.nonce||"";m.head.append(a)}));d[l]?console.warn(p+" only loads once. Ignoring:",g):d[l]=(f,...n)=>r.add(f)&&u().then(()=>d[l](f,...n))})({
+      key: "{{ maps_api_key }}",
+      v: "weekly",
+    });
+  </script>
+  {% endif %}
+</body>
+</html>
