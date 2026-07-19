@@ -398,3 +398,20 @@
     gap: var(--space-2);
   }
 }
+
+/* ── Interactive Map ─────────────────────────────────────── */
+.map-section {
+  display: none;
+  height: 300px;
+  width: 100%;
+  margin-top: var(--space-4);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+}
+
+.map-element {
+  height: 100%;
+  width: 100%;
+}
+
