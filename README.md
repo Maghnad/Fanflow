@@ -6,8 +6,9 @@
 
 FanFlow AI is a coherent, two-surface product that uses Generative AI to improve the tournament experience for both **fans** and **stadium staff**:
 
-1. **Fan-Facing GenAI Assistant** — A multilingual chat interface that helps fans with wayfinding, accessible routing, gate information, transport options, and general venue Q&A.
-2. **Staff Operations Dashboard** — Ingests simulated real-time signals (gate congestion, crowd density, incident reports) and uses GenAI to generate plain-language alerts and actionable recommendations.
+1. **Fan-Facing GenAI Assistant** — A multilingual chat interface with **Voice UI (Speech-to-Text & Text-to-Speech)** that helps fans with wayfinding, accessible routing, gate information, transport options, and general venue Q&A.
+2. **Staff Operations Dashboard** — Ingests simulated real-time signals (gate congestion, crowd density, incident reports, waste levels) and provides an interactive **Ops Copilot (Live AI Control Tower)** to generate plain-language alerts and actionable recommendations.
+3. **Smart Congestion-Aware Routing** — Dynamically alters routing paths in real-time to steer fans away from crowded gates using Dijkstra's algorithm augmented with live congestion penalties.
 
 ---
 
@@ -127,10 +128,10 @@ To swap providers, change **only** the `.env` file. No code changes needed.
 | Shipped Feature | Problem Statement Pillar | Implementation |
 |----------------|-------------------------|----------------|
 | Multilingual fan chat (6 languages) | **"multilingual assistance"** | Language selector + LLM language instruction + full i18n UI strings (EN, ES, FR, AR, PT, DE) |
-| Wayfinding + gate info | **"navigation"** | Dijkstra shortest-path over stadium graphs, section-to-gate mapping, gate info API |
-| Accessible routing (ramp/elevator-only paths, quiet zones, sign-language staff) | **"accessibility"** | Separate accessible graph, wheelchair sections, sensory room data, service animal relief areas |
-| Real-time crowd density dashboard | **"crowd management"** + **"operational intelligence"** | Simulated gate congestion with sinusoidal crowd waves, per-gate status cards, incident feed |
-| AI-generated staff alerts & recommendations | **"real-time decision support"** | LLM analyzes live crowd snapshot → plain-language analysis + numbered action items |
+| Wayfinding + gate info + Smart Routing | **"navigation"** | Dijkstra shortest-path over stadium graphs, dynamically penalized by real-time gate congestion to avoid bottlenecks. |
+| Accessible routing + Voice UI | **"accessibility"** | Speech-to-Text and Text-to-Speech for visually impaired fans, wheelchair sections, sensory rooms. |
+| Real-time crowd & sustainability dashboard | **"crowd management"** + **"operational intelligence"** | Simulated gate congestion, waste bin levels, per-gate status cards, incident feed |
+| Ops Copilot (Live AI Control Tower) | **"real-time decision support"** | Interactive chat interface for staff. LLM analyzes live crowd snapshot + waste levels + incidents → plain-language answers and action items |
 
 **All five features are fully functional**, not mocked. Real 2026 venue data (MetLife Stadium, SoFi Stadium, AT&T Stadium, Hard Rock Stadium, Estadio Azteca, BMO Field).
 
