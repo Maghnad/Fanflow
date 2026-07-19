@@ -1,9 +1,9 @@
+import contextlib
+
 import pytest
 
 from app.services.routing_service import calculate_distance
 
-
-import contextlib
 
 @pytest.mark.asyncio
 async def test_calculate_distance_accessible() -> None:
@@ -12,6 +12,7 @@ async def test_calculate_distance_accessible() -> None:
         path, dist, mins = calculate_distance("att_stadium", "A", "B", accessible=True)
         assert len(path) > 0
         assert dist > 0
+
 
 @pytest.mark.asyncio
 async def test_calculate_distance_unknown_nodes() -> None:

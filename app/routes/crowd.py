@@ -124,7 +124,8 @@ async def ops_chat_endpoint(
 )
 @limiter.limit("60/minute")
 async def dynamic_signage(
-    request: Request, stadium_id: str = "metlife",
+    request: Request,
+    stadium_id: str = "metlife",
 ) -> list[dict[str, str]]:
     """Generate AI-driven directional messages for stadium digital signage.
 
@@ -151,7 +152,8 @@ async def dynamic_signage(
 )
 @limiter.limit("30/minute")
 async def predictive_heatmap(
-    request: Request, stadium_id: str = "metlife",
+    request: Request,
+    stadium_id: str = "metlife",
 ) -> dict[str, object]:
     """Forecast gate congestion 15 and 30 minutes into the future.
 
@@ -170,4 +172,3 @@ async def predictive_heatmap(
         return crowd_service.predict_crowd_heatmap(stadium_id.lower())
     except ValueError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
-

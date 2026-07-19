@@ -19,7 +19,7 @@ class Settings(BaseSettings):
     """Typed application settings sourced from environment variables.
 
     Attributes:
-        llm_provider: LLM provider identifier (e.g. 'openai', 'google').
+        llm_provider: LLM provider identifier (e.g. 'openai', 'google', 'groq').
         llm_model: Model name to request from the provider.
         llm_api_key: Secret API key — never expose to the frontend.
         llm_base_url: Base URL for the LLM API (OpenAI-compatible).
@@ -28,6 +28,12 @@ class Settings(BaseSettings):
         app_env: Runtime environment ('development' or 'production').
         log_level: Logging verbosity level.
     """
+
+    model_config = {
+        "env_file": ".env",
+        "env_file_encoding": "utf-8",
+        "case_sensitive": False,
+    }
 
     llm_provider: str = "openai"
     llm_model: str = "gpt-4o-mini"
@@ -44,13 +50,6 @@ class Settings(BaseSettings):
     gcp_secret_name: str = "fanflow-llm-api-key"
     use_firestore: bool = False
     gcp_maps_api_key: str = ""
-
-    class Config:
-        """Pydantic-settings configuration."""
-
-        env_file = ".env"
-        env_file_encoding = "utf-8"
-        case_sensitive = False
 
 
 @lru_cache

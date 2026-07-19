@@ -391,29 +391,35 @@ def generate_dynamic_signage(stadium_id: str) -> list[dict[str, str]]:
     for gate in status.gates:
         if gate.status == "red":
             alt = least_busy.name if least_busy and least_busy.gate_id != gate.gate_id else "staff"
-            signs.append({
-                "board_location": gate.name,
-                "message": (
-                    f"⚠️ {gate.name} is congested ({gate.congestion_pct:.0f}%). "
-                    f"Please use {alt} for faster entry."
-                ),
-                "priority": "high",
-            })
+            signs.append(
+                {
+                    "board_location": gate.name,
+                    "message": (
+                        f"⚠️ {gate.name} is congested ({gate.congestion_pct:.0f}%). "
+                        f"Please use {alt} for faster entry."
+                    ),
+                    "priority": "high",
+                }
+            )
         elif gate.status == "yellow":
-            signs.append({
-                "board_location": gate.name,
-                "message": (
-                    f"ℹ️ {gate.name} is moderately busy ({gate.congestion_pct:.0f}%). "
-                    "Allow extra time."
-                ),
-                "priority": "medium",
-            })
+            signs.append(
+                {
+                    "board_location": gate.name,
+                    "message": (
+                        f"ℹ️ {gate.name} is moderately busy ({gate.congestion_pct:.0f}%). "
+                        "Allow extra time."
+                    ),
+                    "priority": "medium",
+                }
+            )
         else:
-            signs.append({
-                "board_location": gate.name,
-                "message": f"✅ {gate.name} — entry is smooth. Welcome!",
-                "priority": "low",
-            })
+            signs.append(
+                {
+                    "board_location": gate.name,
+                    "message": f"✅ {gate.name} — entry is smooth. Welcome!",
+                    "priority": "low",
+                }
+            )
 
     return signs
 
@@ -450,7 +456,7 @@ def predict_crowd_heatmap(stadium_id: str) -> dict[str, object]:
         if pct >= 80:
             trend = random.uniform(-5, 3)  # Near capacity — slight regression to mean
         elif pct >= 60:
-            trend = random.uniform(1, 8)   # Yellow zone — likely to worsen
+            trend = random.uniform(1, 8)  # Yellow zone — likely to worsen
         else:
             trend = random.uniform(-2, 4)  # Green zone — slight upward drift
 
@@ -468,4 +474,3 @@ def predict_crowd_heatmap(stadium_id: str) -> dict[str, object]:
         "forecast_30min": forecast_30,
         "predicted_bottlenecks": bottlenecks,
     }
-

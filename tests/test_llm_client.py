@@ -1,8 +1,8 @@
+from collections.abc import AsyncGenerator
 from unittest.mock import MagicMock, patch
 
 import pytest
 
-from typing import AsyncGenerator
 from app.config import get_settings
 from app.llm.client import generate, generate_stream
 
@@ -16,13 +16,12 @@ async def test_llm_client_openai() -> None:
     with patch("httpx.AsyncClient.post") as mock_post:
         mock_response = MagicMock()
         mock_response.raise_for_status.return_value = None
-        mock_response.json.return_value = {
-            "choices": [{"message": {"content": "Hello!"}}]
-        }
+        mock_response.json.return_value = {"choices": [{"message": {"content": "Hello!"}}]}
         mock_post.return_value = mock_response
 
         result = await generate("system", "user")
         assert result == "Hello!"
+
 
 @pytest.mark.asyncio
 async def test_llm_client_openai_error() -> None:
@@ -33,7 +32,11 @@ async def test_llm_client_openai_error() -> None:
     with patch("httpx.AsyncClient.post") as mock_post:
         mock_post.side_effect = Exception("API error")
         result = await generate("system", "user", use_cache=False)
-        assert result == "I'm FanFlow AI, your FIFA World Cup 2026 stadium assistant. I'm currently unable to connect to my AI backend. Please try again shortly, or ask a staff member for help."
+        assert (
+            result
+            == "I'm FanFlow AI, your FIFA World Cup 2026 stadium assistant. I'm currently unable to connect to my AI backend. Please try again shortly, or ask a staff member for help."
+        )
+
 
 @pytest.mark.asyncio
 async def test_llm_client_stream_openai() -> None:
@@ -43,7 +46,7 @@ async def test_llm_client_stream_openai() -> None:
 
     async def mock_aiter() -> AsyncGenerator[str, None]:
         yield 'data: {"choices": [{"delta": {"content": "Hi"}}]}\n\n'
-        yield 'data: [DONE]\n\n'
+        yield "data: [DONE]\n\n"
 
     with patch("httpx.AsyncClient.stream") as mock_stream:
         mock_context = MagicMock()

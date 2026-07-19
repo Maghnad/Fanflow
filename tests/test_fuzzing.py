@@ -58,9 +58,9 @@ class TestSanitizeInputFuzzing:
         for ch in result:
             if ch in ("\n", "\t"):
                 continue
-            assert not unicodedata.category(ch).startswith("C"), (
-                f"Control character U+{ord(ch):04X} found in sanitized output"
-            )
+            assert not unicodedata.category(ch).startswith(
+                "C"
+            ), f"Control character U+{ord(ch):04X} found in sanitized output"
 
     def test_sanitize_empty_string(self) -> None:
         """Empty string returns empty string."""
@@ -109,9 +109,9 @@ class TestInjectionDetectionFuzzing:
             "What time does the match start?",
         ]
         for safe_input in safe_inputs:
-            assert not contains_injection_attempt(safe_input), (
-                f"Safe input falsely flagged: {safe_input!r}"
-            )
+            assert not contains_injection_attempt(
+                safe_input
+            ), f"Safe input falsely flagged: {safe_input!r}"
 
 
 # ---------------------------------------------------------------------------
