@@ -184,6 +184,8 @@ if TYPE_CHECKING:
     from starlette.requests import Request
     from starlette.responses import Response
 
+from typing import cast
+
 
 class SecurityHeadersMiddleware(BaseHTTPMiddleware):
     """Middleware that adds standard security headers to every response."""
@@ -203,4 +205,5 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         response.headers["X-Frame-Options"] = "DENY"
         response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
         response.headers["X-XSS-Protection"] = "1; mode=block"
-        return response
+        response.headers["Permissions-Policy"] = "microphone=(self)"
+        return cast("Response", response)

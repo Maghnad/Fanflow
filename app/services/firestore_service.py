@@ -11,7 +11,7 @@ from __future__ import annotations
 import logging
 from typing import Any
 
-from google.cloud import firestore
+from google.cloud import firestore  # type: ignore[attr-defined]
 
 from app.config import get_settings
 

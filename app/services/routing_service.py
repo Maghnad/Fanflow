@@ -51,7 +51,6 @@ def _dijkstra(
     """
     # Import locally to avoid circular imports
 
-    congestion_map: dict[str, float] = {}
     import contextlib
     with contextlib.suppress(Exception):
         # Default to metlife since we don't have stadium_id in _dijkstra,

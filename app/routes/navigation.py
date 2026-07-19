@@ -13,8 +13,7 @@ from typing import TYPE_CHECKING
 
 from fastapi import APIRouter, HTTPException, Request
 
-if TYPE_CHECKING:
-    from app.data.stadiums import TransportHub
+from app.data.stadiums import TransportHub  # noqa: TC001
 from app.data.translations import get_ui_strings, is_supported_language
 from app.schemas import NavigationRequest, NavigationResponse
 from app.security import limiter

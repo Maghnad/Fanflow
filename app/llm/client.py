@@ -184,17 +184,19 @@ async def generate(
     messages = build_safe_messages(clean_prompt, system)
 
     # Route to Google GenAI SDK if provider is google-sdk
+    raw_text: str = ""
     if settings.llm_provider == "google-sdk":
         try:
             from google import genai
             from google.genai import types
+            from typing import cast
 
             client = genai.Client(api_key=settings.llm_api_key)
-            contents = [types.Content(role="user", parts=[types.Part.from_text(clean_prompt)])]
+            contents = [types.Content(role="user", parts=[types.Part.from_text(text=clean_prompt)])]
             config = types.GenerateContentConfig(
                 system_instruction=system,
-                temperature=kwargs.get("temperature", 0.7),
-                max_output_tokens=kwargs.get("max_tokens", 1024),
+                temperature=cast("float | None", kwargs.get("temperature", 0.7)),
+                max_output_tokens=cast("int | None", kwargs.get("max_tokens", 1024)),
             )
             response = await client.aio.models.generate_content(
                 model=settings.llm_model,
@@ -208,8 +210,8 @@ async def generate(
     else:
         # Call the LLM (OpenAI-compatible endpoint)
         try:
-            client = await get_http_client()
-            response = await client.post(
+            http_client = await get_http_client()
+            response_http = await http_client.post(
                 f"{settings.llm_base_url.rstrip('/')}/chat/completions",
                 headers={
                     "Authorization": f"Bearer {settings.llm_api_key}",
@@ -223,9 +225,9 @@ async def generate(
                     "stream": False,
                 },
             )
-            response.raise_for_status()
-            data = response.json()
-            raw_text: str = data["choices"][0]["message"]["content"]
+            response_http.raise_for_status()
+            data = response_http.json()
+            raw_text = data["choices"][0]["message"]["content"]
         except httpx.HTTPStatusError as e:
             logger.error(
                 f"LLM API call failed with HTTP {e.response.status_code}: {e.response.text}"
@@ -289,15 +291,16 @@ async def generate_stream(
         try:
             from google import genai
             from google.genai import types
+            from typing import cast
 
             client = genai.Client(api_key=settings.llm_api_key)
-            contents = [types.Content(role="user", parts=[types.Part.from_text(clean_prompt)])]
+            contents = [types.Content(role="user", parts=[types.Part.from_text(text=clean_prompt)])]
             config = types.GenerateContentConfig(
                 system_instruction=system,
-                temperature=kwargs.get("temperature", 0.7),
-                max_output_tokens=kwargs.get("max_tokens", 1024),
+                temperature=cast("float | None", kwargs.get("temperature", 0.7)),
+                max_output_tokens=cast("int | None", kwargs.get("max_tokens", 1024)),
             )
-            response_stream = client.aio.models.generate_content_stream(
+            response_stream = await client.aio.models.generate_content_stream(
                 model=settings.llm_model,
                 contents=contents,
                 config=config,
@@ -310,8 +313,8 @@ async def generate_stream(
             yield _FALLBACK_RESPONSE
     else:
         try:
-            client = await get_http_client()
-            async with client.stream(
+            http_client = await get_http_client()
+            async with http_client.stream(
                 "POST",
                 f"{settings.llm_base_url.rstrip('/')}/chat/completions",
                 headers={
@@ -325,9 +328,9 @@ async def generate_stream(
                     "max_tokens": kwargs.get("max_tokens", 1024),
                     "stream": True,
                 },
-            ) as response:
-                response.raise_for_status()
-                async for line in response.aiter_lines():
+            ) as response_http:
+                response_http.raise_for_status()
+                async for line in response_http.aiter_lines():
                     if not line or not line.startswith("data: "):
                         continue
                     data_str = line[6:]  # strip "data: " prefix
