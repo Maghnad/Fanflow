@@ -206,4 +206,5 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
         response.headers["X-XSS-Protection"] = "1; mode=block"
         response.headers["Permissions-Policy"] = "microphone=(self)"
+        response.headers["Referrer-Policy"] = "no-referrer"
         return cast("Response", response)
