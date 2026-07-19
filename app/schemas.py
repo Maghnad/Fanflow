@@ -19,6 +19,9 @@ from app.data.translations import SUPPORTED_LANGUAGES
 class ChatRequest(BaseModel):
     """Request body for the chat endpoint.
 
+    model_config = {"extra": "forbid"}
+
+
     Attributes:
         message: User's chat message (1–2000 characters).
         language: ISO 639-1 language code.
@@ -88,6 +91,8 @@ class NavigationRequest(BaseModel):
         to_location: Destination location.
         accessible: If True, only use accessible routes (ramps, elevators).
     """
+
+    model_config = {"extra": "forbid"}
 
     stadium_id: str = Field(
         ...,
@@ -219,6 +224,8 @@ class CrowdAnalysisRequest(BaseModel):
         stadium_id: Stadium identifier.
     """
 
+    model_config = {"extra": "forbid"}
+
     stadium_id: str = Field(
         default="metlife",
         description="Stadium identifier",
@@ -255,6 +262,8 @@ class OpsChatRequest(BaseModel):
         message: The staff member's query.
         stadium_id: Stadium identifier.
     """
+
+    model_config = {"extra": "forbid"}
 
     message: str = Field(
         ...,

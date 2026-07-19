@@ -104,6 +104,7 @@ def client() -> Generator[TestClient, None, None]:
     with (
         patch("app.llm.client.generate", side_effect=mock_generate),
         patch("app.llm.client.generate_stream", side_effect=mock_generate_stream),
+        patch("app.llm.client.close_http_client", new_callable=AsyncMock),
         patch("app.services.chat_service.llm_client") as mock_llm,
         patch("app.services.crowd_service.llm_client") as mock_crowd_llm,
     ):
