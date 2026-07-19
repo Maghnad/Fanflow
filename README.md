@@ -12,6 +12,27 @@ FanFlow AI is a coherent, two-surface product that uses Generative AI to improve
 
 ---
 
+## 🏆 Submission Requirements
+
+### 🎯 Chosen Vertical
+**Stadium Operations & Fan Experience**
+
+### 🧠 Approach and Logic
+Our approach is to bridge the gap between back-of-house stadium operations and front-of-house fan experience using Generative AI. We use a deterministic backend (FastAPI, Dijkstra's algorithm, simulated IoT sensors) to ground the AI in reality. The LLM acts as an intelligent reasoning layer on top of this structured data—translating complex operational metrics into plain-language recommendations for staff, and turning static stadium maps into a conversational, accessible, multilingual concierge for fans.
+
+### ⚙️ How the Solution Works
+1. **Data Ingestion:** The app runs a background asynchronous loop (`crowd_service.py`) that simulates live IoT sensor data (gate congestion, waste levels, incident reports) across major 2026 World Cup venues.
+2. **Staff Operations (Ops Copilot):** Stadium staff view this live data on a dashboard. They can chat with the Ops Copilot, which intercepts the current state of the stadium, injects it into the prompt context, and uses the LLM to generate immediate, localized action plans (e.g., "Deploy 3 staff to Gate A to manage a 90% congestion spike").
+3. **Fan Experience:** Fans use a voice-enabled, multilingual chat interface. When a fan asks for directions, the app calculates the shortest path using a graph of the stadium (`routing_service.py`). Crucially, the edge weights are dynamically penalized by the live congestion data, steering fans away from bottlenecks.
+
+### 🤔 Assumptions Made
+- We assume that by 2026, stadiums will be equipped with IoT sensors capable of estimating crowd density at major chokepoints (gates, concourses) and waste bin fill levels.
+- We assume fans have internet connectivity (Wi-Fi or 5G) inside the stadium to access the web app.
+- We assume stadium staff are equipped with tablets or mobile devices to access the web-based operations dashboard.
+- The LLM provider (Groq/OpenAI/Gemini) will maintain high availability with low latency during the event.
+
+---
+
 ## 🏗️ Architecture Overview
 
 ```
