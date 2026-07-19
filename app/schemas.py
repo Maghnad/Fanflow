@@ -19,14 +19,13 @@ from app.data.translations import SUPPORTED_LANGUAGES
 class ChatRequest(BaseModel):
     """Request body for the chat endpoint.
 
-    model_config = {"extra": "forbid"}
-
-
     Attributes:
         message: User's chat message (1–2000 characters).
         language: ISO 639-1 language code.
         stadium_id: Stadium identifier for context.
     """
+
+    model_config = {"extra": "forbid"}
 
     message: str = Field(
         ...,
