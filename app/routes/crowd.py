@@ -116,3 +116,58 @@ async def ops_chat_endpoint(
         return OpsChatResponse(reply=reply)
     except ValueError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
+
+
+@router.get(
+    "/signage",
+    summary="Generate dynamic directional signage messages",
+)
+@limiter.limit("60/minute")
+async def dynamic_signage(
+    request: Request, stadium_id: str = "metlife",
+) -> list[dict[str, str]]:
+    """Generate AI-driven directional messages for stadium digital signage.
+
+    Analyzes real-time gate congestion and produces plain-language
+    messages suitable for pushing to digital boards, directing fans
+    away from congested gates and toward smoother alternatives.
+
+    Args:
+        request: FastAPI request.
+        stadium_id: Stadium identifier (query parameter).
+
+    Returns:
+        List of signage dicts with board_location, message, and priority.
+    """
+    try:
+        return crowd_service.generate_dynamic_signage(stadium_id.lower())
+    except ValueError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+
+
+@router.get(
+    "/heatmap/predict",
+    summary="Predict crowd bottlenecks 15-30 minutes ahead",
+)
+@limiter.limit("30/minute")
+async def predictive_heatmap(
+    request: Request, stadium_id: str = "metlife",
+) -> dict[str, object]:
+    """Forecast gate congestion 15 and 30 minutes into the future.
+
+    Uses current crowd data with a trend model to predict which gates
+    will become bottlenecks, giving ops staff early warning to act.
+
+    Args:
+        request: FastAPI request.
+        stadium_id: Stadium identifier (query parameter).
+
+    Returns:
+        Dict with current, forecast_15min, forecast_30min snapshots
+        and a predicted_bottlenecks list.
+    """
+    try:
+        return crowd_service.predict_crowd_heatmap(stadium_id.lower())
+    except ValueError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+

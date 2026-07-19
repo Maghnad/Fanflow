@@ -49,13 +49,6 @@ def _dijkstra(
         ValueError: If start or end node is not in the graph, or if no
             path exists between them.
     """
-    # Import locally to avoid circular imports
-
-    import contextlib
-    with contextlib.suppress(Exception):
-        # Default to metlife since we don't have stadium_id in _dijkstra,
-        # but we can pass it down!
-        pass
     if start not in graph:
         raise ValueError(f"Start location '{start}' not found in stadium map.")
     if end not in graph:

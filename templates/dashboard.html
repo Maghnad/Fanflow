@@ -152,6 +152,34 @@
       </div>
     </section>
 
+    <!-- Dynamic Signage Panel -->
+    <section class="panel-section" aria-label="Dynamic digital signage messages">
+      <h2 class="panel-section__title">
+        <span aria-hidden="true">📺</span>
+        Dynamic Signage Generator
+      </h2>
+      <div class="panel-section__content" id="signage-feed" role="list" aria-live="polite">
+        <div class="empty-state" id="signage-empty">
+          <div class="empty-state__icon" aria-hidden="true">📺</div>
+          <p>Signage messages will appear here</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Predictive Heatmap Panel -->
+    <section class="panel-section" aria-label="Predictive crowd heatmap">
+      <h2 class="panel-section__title">
+        <span aria-hidden="true">🔮</span>
+        Predictive Crowd Heatmap
+      </h2>
+      <div class="panel-section__content" id="heatmap-panel" aria-live="polite">
+        <div class="empty-state" id="heatmap-empty">
+          <div class="empty-state__icon" aria-hidden="true">🗺️</div>
+          <p>Predicted gate bottlenecks will appear here</p>
+        </div>
+      </div>
+    </section>
+
     <!-- Ops Copilot Chat Panel -->
     <section class="panel-section" aria-label="Operations Copilot Chat">
       <h2 class="panel-section__title">
@@ -180,6 +208,6 @@
     <p>FanFlow AI Operations Dashboard — FIFA World Cup 2026. For authorized staff only.</p>
   </footer>
 
-  <script src="/static/js/dashboard.js?v=2"></script>
+  <script src="/static/js/dashboard.js?v=3"></script>
 </body>
 </html>

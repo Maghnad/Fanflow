@@ -24,6 +24,8 @@
   const recommendationsFeed = document.getElementById("recommendations-feed");
   const recommendationsEmpty = document.getElementById("recommendations-empty");
   const wasteGrid = document.getElementById("waste-grid");
+  const signageFeed = document.getElementById("signage-feed");
+  const heatmapPanel = document.getElementById("heatmap-panel");
   const analyzeBtn = document.getElementById("analyze-btn");
   const lastUpdated = document.getElementById("last-updated");
 
@@ -67,6 +69,9 @@
     } catch (err) {
       console.error("Failed to fetch crowd status:", err);
     }
+    // Fetch signage and heatmap in parallel (non-blocking)
+    fetchSignage();
+    fetchHeatmap();
   }
 
   function renderCrowdStatus(data) {
@@ -325,6 +330,109 @@
       fetchCrowdStatus();
     }
   });
+
+  // ── Dynamic Signage ──────────────────────────────────────
+  async function fetchSignage() {
+    try {
+      var res = await fetch("/api/crowd/signage?stadium_id=" + currentStadium);
+      if (!res.ok) return;
+      var signs = await res.json();
+      renderSignage(signs);
+    } catch (err) {
+      console.error("Failed to fetch signage:", err);
+    }
+  }
+
+  function renderSignage(signs) {
+    if (!signageFeed) return;
+    signageFeed.innerHTML = "";
+    if (!signs || signs.length === 0) {
+      signageFeed.innerHTML = '<div class="empty-state"><p>No signage data</p></div>';
+      return;
+    }
+    signs.forEach(function (sign) {
+      var item = document.createElement("article");
+      item.className = "incident-item";
+      item.setAttribute("role", "listitem");
+      item.setAttribute("aria-label", "Signage for " + sign.board_location);
+      var priClass = sign.priority === "high" ? "critical" : (sign.priority === "medium" ? "medium" : "low");
+      item.innerHTML =
+        '<div class="incident-item__header">' +
+          '<span class="incident-item__type">' + escapeHtml(sign.board_location) + '</span>' +
+          '<span class="incident-item__severity incident-item__severity--' + priClass + '">' +
+            escapeHtml(sign.priority) +
+          '</span>' +
+        '</div>' +
+        '<p class="incident-item__desc">' + escapeHtml(sign.message) + '</p>';
+      signageFeed.appendChild(item);
+    });
+  }
+
+  // ── Predictive Heatmap ───────────────────────────────────
+  async function fetchHeatmap() {
+    try {
+      var res = await fetch("/api/crowd/heatmap/predict?stadium_id=" + currentStadium);
+      if (!res.ok) return;
+      var data = await res.json();
+      renderHeatmap(data);
+    } catch (err) {
+      console.error("Failed to fetch heatmap:", err);
+    }
+  }
+
+  function renderHeatmap(data) {
+    if (!heatmapPanel) return;
+    heatmapPanel.innerHTML = "";
+
+    // Bottleneck warning
+    if (data.predicted_bottlenecks && data.predicted_bottlenecks.length > 0) {
+      var warning = document.createElement("div");
+      warning.className = "incident-item";
+      warning.setAttribute("role", "alert");
+      warning.innerHTML =
+        '<div class="incident-item__header">' +
+          '<span class="incident-item__type">⚠️ Predicted Bottleneck</span>' +
+          '<span class="incident-item__severity incident-item__severity--critical">WARNING</span>' +
+        '</div>' +
+        '<p class="incident-item__desc">Gates ' + escapeHtml(data.predicted_bottlenecks.join(", ")) +
+        ' are predicted to become congested within 30 minutes.</p>';
+      heatmapPanel.appendChild(warning);
+    }
+
+    // Table of predictions
+    var table = document.createElement("table");
+    table.className = "heatmap-table";
+    table.setAttribute("role", "table");
+    table.setAttribute("aria-label", "Gate congestion forecast");
+    table.innerHTML =
+      '<thead><tr>' +
+        '<th scope="col">Gate</th>' +
+        '<th scope="col">Now</th>' +
+        '<th scope="col">+15 min</th>' +
+        '<th scope="col">+30 min</th>' +
+      '</tr></thead>';
+    var tbody = document.createElement("tbody");
+    Object.keys(data.current || {}).forEach(function (gateId) {
+      var row = document.createElement("tr");
+      var now = data.current[gateId];
+      var f15 = data.forecast_15min[gateId];
+      var f30 = data.forecast_30min[gateId];
+      row.innerHTML =
+        '<td>Gate ' + escapeHtml(gateId) + '</td>' +
+        '<td class="heatmap-cell heatmap-cell--' + classifyDensity(now) + '">' + now.toFixed(1) + '%</td>' +
+        '<td class="heatmap-cell heatmap-cell--' + classifyDensity(f15) + '">' + f15.toFixed(1) + '%</td>' +
+        '<td class="heatmap-cell heatmap-cell--' + classifyDensity(f30) + '">' + f30.toFixed(1) + '%</td>';
+      tbody.appendChild(row);
+    });
+    table.appendChild(tbody);
+    heatmapPanel.appendChild(table);
+  }
+
+  function classifyDensity(pct) {
+    if (pct >= 80) return "red";
+    if (pct >= 60) return "yellow";
+    return "green";
+  }
 
   // ── Initialize ────────────────────────────────────────────
   loadStadiums().then(function () {
