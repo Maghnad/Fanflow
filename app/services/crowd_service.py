@@ -35,12 +35,24 @@ _INCIDENT_PROBABILITY: float = 0.08
 
 _INCIDENT_TYPES: list[dict[str, str]] = [
     {"type": "medical", "severity": "high", "description": "Fan requires medical attention"},
-    {"type": "medical", "severity": "medium", "description": "Fan feeling unwell, requests first aid"},
-    {"type": "security", "severity": "medium", "description": "Unauthorized access attempt at restricted area"},
+    {
+        "type": "medical",
+        "severity": "medium",
+        "description": "Fan feeling unwell, requests first aid",
+    },
+    {
+        "type": "security",
+        "severity": "medium",
+        "description": "Unauthorized access attempt at restricted area",
+    },
     {"type": "security", "severity": "high", "description": "Altercation reported between fans"},
     {"type": "lost_child", "severity": "critical", "description": "Unaccompanied minor reported"},
     {"type": "equipment", "severity": "low", "description": "Turnstile malfunction at gate"},
-    {"type": "equipment", "severity": "medium", "description": "Lighting issue in concourse section"},
+    {
+        "type": "equipment",
+        "severity": "medium",
+        "description": "Lighting issue in concourse section",
+    },
     {"type": "crowd", "severity": "high", "description": "Crowd density exceeding safe threshold"},
 ]
 
@@ -82,11 +94,14 @@ def _init_stadium_state(stadium_id: str) -> None:
         return
 
     gate_states: dict[str, float] = {}
+    waste_states: dict[str, float] = {}
     for gate_id in stadium["gates"]:
         # Start with random base congestion (20–50%)
         gate_states[gate_id] = random.uniform(20.0, 50.0)
+    for zone in ["North", "South", "East", "West", "Concourse"]:
+        waste_states[zone] = random.uniform(10.0, 30.0)
 
-    _simulation_state[stadium_id] = {"gates": gate_states}
+    _simulation_state[stadium_id] = {"gates": gate_states, "waste": waste_states}
     _incidents[stadium_id] = []
     _last_update[stadium_id] = time.time()
 
@@ -124,20 +139,30 @@ def _update_simulation(stadium_id: str) -> None:
         # Clamp to 0–100
         gate_states[gate_id] = max(0.0, min(100.0, new_val))
 
+    waste_states: dict[str, float] = state.get("waste", {})  # type: ignore[assignment]
+    for zone in waste_states:
+        # Waste steadily increases, sometimes drops if "emptied"
+        if random.random() < 0.05:
+            waste_states[zone] = random.uniform(0.0, 10.0)  # Emptied
+        else:
+            waste_states[zone] = min(100.0, waste_states[zone] + random.uniform(0.5, 2.0))
+
     # Maybe generate an incident
     if random.random() < _INCIDENT_PROBABILITY:
         incident_template = random.choice(_INCIDENT_TYPES)
         stadium = get_stadium(stadium_id)
         location = f"Gate {random.choice(list(stadium['gates'].keys()))}" if stadium else "Unknown"
-        _incidents.setdefault(stadium_id, []).append({
-            "id": str(uuid.uuid4())[:8],
-            "type": incident_template["type"],
-            "severity": incident_template["severity"],
-            "location": location,
-            "description": incident_template["description"],
-            "timestamp": datetime.now(UTC).isoformat(),
-            "resolved": False,
-        })
+        _incidents.setdefault(stadium_id, []).append(
+            {
+                "id": str(uuid.uuid4())[:8],
+                "type": incident_template["type"],
+                "severity": incident_template["severity"],
+                "location": location,
+                "description": incident_template["description"],
+                "timestamp": datetime.now(UTC).isoformat(),
+                "resolved": False,
+            }
+        )
 
     # Keep only last 20 incidents
     if len(_incidents.get(stadium_id, [])) > 20:
@@ -177,17 +202,20 @@ def get_crowd_status(stadium_id: str) -> CrowdStatusResponse:
 
     state = _simulation_state[stadium_id]
     gate_states: dict[str, float] = state["gates"]  # type: ignore[assignment]
+    waste_states: dict[str, float] = state.get("waste", {})  # type: ignore[assignment]
 
     gates: list[GateStatus] = []
     for gate_id, gate_info in stadium["gates"].items():
         pct = round(gate_states.get(gate_id, 0.0), 1)
-        gates.append(GateStatus(
-            gate_id=gate_id,
-            name=gate_info["name"],
-            zone=gate_info["zone"],
-            congestion_pct=pct,
-            status=classify_density(pct),
-        ))
+        gates.append(
+            GateStatus(
+                gate_id=gate_id,
+                name=gate_info["name"],
+                zone=gate_info["zone"],
+                congestion_pct=pct,
+                status=classify_density(pct),
+            )
+        )
 
     overall = round(sum(g.congestion_pct for g in gates) / len(gates), 1) if gates else 0.0
 
@@ -204,6 +232,7 @@ def get_crowd_status(stadium_id: str) -> CrowdStatusResponse:
         overall_status=classify_density(overall),
         gates=gates,
         incidents=incidents,
+        waste_levels={k: round(v, 1) for k, v in waste_states.items()},
         last_updated=datetime.now(UTC).isoformat(),
     )
 
@@ -224,10 +253,13 @@ async def analyze_crowd(stadium_id: str) -> CrowdAnalysisResponse:
         f"  - {g.name} ({g.zone}): {g.congestion_pct}% congestion [{g.status.upper()}]"
         for g in status.gates
     )
-    incident_summary = "\n".join(
-        f"  - [{i.severity.upper()}] {i.type}: {i.description} at {i.location} ({i.timestamp})"
-        for i in status.incidents
-    ) or "  No active incidents."
+    incident_summary = (
+        "\n".join(
+            f"  - [{i.severity.upper()}] {i.type}: {i.description} at {i.location} ({i.timestamp})"
+            for i in status.incidents
+        )
+        or "  No active incidents."
+    )
 
     prompt = (
         f"Current crowd status at {status.stadium_name}:\n"
@@ -279,3 +311,55 @@ async def analyze_crowd(stadium_id: str) -> CrowdAnalysisResponse:
         analysis=analysis,
         recommendations=recommendations,
     )
+
+
+async def ops_chat(stadium_id: str, message: str) -> str:
+    """Use GenAI as an operations copilot for the stadium staff.
+
+    Args:
+        stadium_id: Lowercase stadium identifier.
+        message: Staff member's query.
+
+    Returns:
+        String reply from the LLM.
+    """
+    status = get_crowd_status(stadium_id)
+
+    # Build a data snapshot for the LLM
+    gate_summary = "\n".join(
+        f"  - {g.name} ({g.zone}): {g.congestion_pct}% congestion [{g.status.upper()}]"
+        for g in status.gates
+    )
+    incident_summary = (
+        "\n".join(
+            f"  - [{i.severity.upper()}] {i.type}: {i.description} at {i.location} ({i.timestamp})"
+            for i in status.incidents
+        )
+        or "  No active incidents."
+    )
+    waste_summary = (
+        "\n".join(f"  - {zone}: {pct}% full" for zone, pct in status.waste_levels.items())
+        or "  No waste data."
+    )
+
+    system_prompt = (
+        "You are the FanFlow AI Command Center Copilot for FIFA World Cup 2026 organizers. "
+        "You assist stadium staff by answering questions using real-time operational data. "
+        "Keep your answers concise, direct, and focused on operational safety and efficiency.\n\n"
+        f"=== REAL-TIME DATA (STADIUM: {status.stadium_name}) ===\n"
+        f"Overall density: {status.overall_density_pct}% [{status.overall_status.upper()}]\n\n"
+        f"Gate-by-gate congestion:\n{gate_summary}\n\n"
+        f"Active incidents:\n{incident_summary}\n\n"
+        f"Sustainability / Waste Bin Levels:\n{waste_summary}\n"
+        "=======================================================\n"
+    )
+
+    try:
+        raw_response = await llm_client.generate(
+            prompt=message,
+            system=system_prompt,
+            use_cache=False,
+        )
+        return raw_response
+    except Exception as e:
+        return f"Unable to connect to Ops Copilot at this time. ({str(e)})"

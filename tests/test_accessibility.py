@@ -11,8 +11,10 @@ and axe-playwright-python and run with: pytest tests/test_accessibility.py -m br
 from __future__ import annotations
 
 import re
+from typing import TYPE_CHECKING
 
-from fastapi.testclient import TestClient
+if TYPE_CHECKING:
+    from fastapi.testclient import TestClient
 
 
 class TestSemanticHTML:
@@ -69,7 +71,7 @@ class TestARIAAttributes:
         """Chat input has an associated label."""
         response = client.get("/")
         html = response.text
-        assert 'aria-label=' in html or '<label for="chat-input"' in html
+        assert "aria-label=" in html or '<label for="chat-input"' in html
 
     def test_fan_send_button_has_label(self, client: TestClient) -> None:
         """Send button has an aria-label."""

@@ -32,6 +32,7 @@ def _dijkstra(
     graph: dict[str, dict[str, int]],
     start: str,
     end: str,
+    congestion_map: dict[str, float] | None = None,
 ) -> tuple[list[str], float]:
     """Find the shortest path between two nodes using Dijkstra's algorithm.
 
@@ -39,6 +40,7 @@ def _dijkstra(
         graph: Adjacency dict mapping node → {neighbour: distance}.
         start: Starting node key.
         end: Destination node key.
+        congestion_map: Optional dict mapping node key to congestion percentage.
 
     Returns:
         Tuple of (ordered path as list of node keys, total distance in meters).
@@ -47,20 +49,31 @@ def _dijkstra(
         ValueError: If start or end node is not in the graph, or if no
             path exists between them.
     """
+    # Import locally to avoid circular imports
+
+    congestion_map: dict[str, float] = {}
+    import contextlib
+    with contextlib.suppress(Exception):
+        # Default to metlife since we don't have stadium_id in _dijkstra,
+        # but we can pass it down!
+        pass
     if start not in graph:
         raise ValueError(f"Start location '{start}' not found in stadium map.")
     if end not in graph:
         raise ValueError(f"Destination '{end}' not found in stadium map.")
 
-    # Priority queue: (distance, node, path)
-    queue: list[tuple[float, str, list[str]]] = [(0.0, start, [start])]
+    if congestion_map is None:
+        congestion_map = {}
+
+    # Priority queue: (effective_distance, physical_distance, node, path)
+    queue: list[tuple[float, float, str, list[str]]] = [(0.0, 0.0, start, [start])]
     visited: set[str] = set()
 
     while queue:
-        dist, node, path = heapq.heappop(queue)
+        eff_dist, phys_dist, node, path = heapq.heappop(queue)
 
         if node == end:
-            return path, dist
+            return path, phys_dist
 
         if node in visited:
             continue
@@ -68,7 +81,20 @@ def _dijkstra(
 
         for neighbour, weight in graph.get(node, {}).items():
             if neighbour not in visited:
-                heapq.heappush(queue, (dist + weight, neighbour, path + [neighbour]))
+                # Apply congestion penalty
+                # Example: If a gate is 80% congested, penalty is 1 + (80/100)*3 = 3.4x weight
+                congestion = congestion_map.get(neighbour, 0.0)
+                penalty = 1.0 + (congestion / 100.0) * 3.0
+                effective_weight = weight * penalty
+                heapq.heappush(
+                    queue,
+                    (
+                        eff_dist + effective_weight,
+                        phys_dist + weight,
+                        neighbour,
+                        path + [neighbour],
+                    ),
+                )
 
     raise ValueError(f"No path found from '{start}' to '{end}'.")
 
@@ -147,7 +173,17 @@ def calculate_distance(
     from_key = _resolve_graph_key(graph, from_location)
     to_key = _resolve_graph_key(graph, to_location)
 
-    path, distance = _dijkstra(graph, from_key, to_key)
+    # Fetch live congestion to influence routing
+    from app.services.crowd_service import get_crowd_status
+
+    try:
+        crowd_status = get_crowd_status(stadium_id)
+        # Create map of gate key (e.g. "A") to congestion percentage
+        congestion_map = {g.gate_id: g.congestion_pct for g in crowd_status.gates}
+    except Exception:
+        congestion_map = {}
+
+    path, distance = _dijkstra(graph, from_key, to_key, congestion_map)
     minutes = (distance / speed) / 60.0
 
     return path, distance, round(minutes, 1)

@@ -261,6 +261,42 @@
   box-shadow: 0 0 0 3px var(--color-accent-dim), var(--shadow-glow);
 }
 
+.voice-btn {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  background: transparent;
+  border: none;
+  font-size: 1.2rem;
+  cursor: pointer;
+  opacity: 0.5;
+  transition: all var(--transition-fast);
+  padding: var(--space-1);
+}
+
+.voice-btn:hover {
+  opacity: 0.8;
+}
+
+#mic-btn {
+  right: 40px;
+}
+
+#speaker-btn {
+  right: 10px;
+}
+
+.voice-btn--active {
+  opacity: 1;
+  color: var(--color-accent);
+}
+
+.voice-btn--listening {
+  color: var(--color-red);
+  animation: pulse-dot 1s infinite;
+  opacity: 1;
+}
+
 .chat-send-btn {
   width: 44px;
   height: 44px;

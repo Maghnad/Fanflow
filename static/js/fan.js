@@ -19,11 +19,23 @@
   const stadiumSelect = document.getElementById("stadium-select");
   const quickActionBtns = document.querySelectorAll(".quick-actions__btn");
 
+  const micBtn = document.getElementById("mic-btn");
+  const speakerBtn = document.getElementById("speaker-btn");
+
   // ── i18n Map (loaded from API) ────────────────────────────
   let currentLang = "en";
   let currentStadium = "metlife";
   let isStreaming = false;
   let mapInitialized = false;
+  let voiceEnabled = true;
+
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  let recognition = null;
+  if (SpeechRecognition) {
+    recognition = new SpeechRecognition();
+    recognition.continuous = false;
+    recognition.interimResults = false;
+  }
 
   // Client-side i18n fallback (mirrors server translations)
   const i18nFallback = {
@@ -307,12 +319,16 @@
 
         if (!fullText) {
           bubbleDiv.innerHTML = formatMessage("No response received. Please try again.");
+        } else if (voiceEnabled) {
+          speak(fullText.replace(/\*/g, ""));
         }
       } else {
         // Fallback to regular POST
         hideTyping();
         var jsonRes = await response.json();
-        addMessage(jsonRes.reply || jsonRes.detail || "Error occurred.", false);
+        const fallbackText = jsonRes.reply || jsonRes.detail || "Error occurred.";
+        addMessage(fallbackText, false);
+        if (voiceEnabled) speak(fallbackText);
       }
     } catch (err) {
       hideTyping();
@@ -330,7 +346,9 @@
           }),
         });
         var fallbackData = await fallbackRes.json();
-        addMessage(fallbackData.reply || "Sorry, something went wrong.", false);
+        const fallbackText2 = fallbackData.reply || "Sorry, something went wrong.";
+        addMessage(fallbackText2, false);
+        if (voiceEnabled) speak(fallbackText2);
       } catch (fallbackErr) {
         addMessage("Sorry, something went wrong. Please try again.", false);
       }
@@ -345,6 +363,58 @@
   function autoResize() {
     chatInput.style.height = "auto";
     chatInput.style.height = Math.min(chatInput.scrollHeight, 120) + "px";
+  }
+
+  // ── Voice ─────────────────────────────────────────────────
+  function speak(text) {
+    if (!window.speechSynthesis) return;
+    window.speechSynthesis.cancel();
+    var utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = currentLang;
+    window.speechSynthesis.speak(utterance);
+  }
+
+  if (speakerBtn) {
+    speakerBtn.addEventListener("click", function() {
+      voiceEnabled = !voiceEnabled;
+      if (voiceEnabled) {
+        speakerBtn.classList.add("voice-btn--active");
+        speakerBtn.style.opacity = "1";
+      } else {
+        speakerBtn.classList.remove("voice-btn--active");
+        speakerBtn.style.opacity = "0.5";
+        if (window.speechSynthesis) window.speechSynthesis.cancel();
+      }
+    });
+  }
+
+  if (micBtn && recognition) {
+    micBtn.addEventListener("click", function() {
+      if (micBtn.classList.contains("voice-btn--listening")) {
+        recognition.stop();
+      } else {
+        recognition.lang = currentLang;
+        recognition.start();
+        micBtn.classList.add("voice-btn--listening");
+      }
+    });
+
+    recognition.onresult = function(event) {
+      var transcript = event.results[0][0].transcript;
+      chatInput.value = transcript;
+      sendMessage(transcript);
+    };
+
+    recognition.onerror = function(event) {
+      console.error("Speech recognition error", event.error);
+      micBtn.classList.remove("voice-btn--listening");
+    };
+
+    recognition.onend = function() {
+      micBtn.classList.remove("voice-btn--listening");
+    };
+  } else if (micBtn) {
+    micBtn.style.display = "none";
   }
 
   // ── Event Listeners ───────────────────────────────────────

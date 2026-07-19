@@ -19,6 +19,7 @@ logger = logging.getLogger(__name__)
 
 _db: firestore.AsyncClient | None = None
 
+
 def get_firestore_client() -> firestore.AsyncClient | None:
     """Return the shared Firestore async client, creating it if needed.
 
@@ -44,7 +45,10 @@ def get_firestore_client() -> firestore.AsyncClient | None:
 
     return _db
 
-def sync_stadium_state(stadium_id: str, state: dict[str, Any], incidents: list[dict[str, Any]]) -> None:
+
+def sync_stadium_state(
+    stadium_id: str, state: dict[str, Any], incidents: list[dict[str, Any]]
+) -> None:
     """Fire-and-forget sync to Firestore.
 
     Args:
@@ -59,13 +63,17 @@ def sync_stadium_state(stadium_id: str, state: dict[str, Any], incidents: list[d
     import asyncio
 
     async def _write() -> None:
+        """Write the stadium state to Firestore asynchronously."""
         try:
             doc_ref = db.collection("stadiums").document(stadium_id)
-            await doc_ref.set({
-                "gates": state["gates"],
-                "incidents": incidents,
-                "last_update": firestore.SERVER_TIMESTAMP
-            }, merge=True)
+            await doc_ref.set(
+                {
+                    "gates": state["gates"],
+                    "incidents": incidents,
+                    "last_update": firestore.SERVER_TIMESTAMP,
+                },
+                merge=True,
+            )
         except Exception as e:
             logger.error(f"Firestore sync failed: {e}")
 
@@ -73,5 +81,5 @@ def sync_stadium_state(stadium_id: str, state: dict[str, Any], incidents: list[d
         loop = asyncio.get_running_loop()
         loop.create_task(_write())
     except RuntimeError:
+        # If there's no running loop, we can't create a task.
         pass
-

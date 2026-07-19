@@ -8,8 +8,8 @@ of the shared HTTP client.
 from __future__ import annotations
 
 import logging
-from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
+from typing import TYPE_CHECKING
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -20,7 +20,10 @@ from slowapi.errors import RateLimitExceeded
 from app.config import get_settings
 from app.llm.client import close_http_client
 from app.routes import chat, crowd, navigation, static_pages
-from app.security import limiter
+from app.security import SecurityHeadersMiddleware, limiter
+
+if TYPE_CHECKING:
+    from collections.abc import AsyncIterator
 
 # ---------------------------------------------------------------------------
 # Logging
@@ -89,9 +92,7 @@ def create_app() -> FastAPI:
 
     # ── CORS ───────────────────────────────────────────────────────────
     allowed_origins = [
-        origin.strip()
-        for origin in settings.allowed_origins.split(",")
-        if origin.strip()
+        origin.strip() for origin in settings.allowed_origins.split(",") if origin.strip()
     ]
     app.add_middleware(
         CORSMiddleware,
@@ -100,6 +101,7 @@ def create_app() -> FastAPI:
         allow_methods=["GET", "POST"],
         allow_headers=["Content-Type", "Authorization"],
     )
+    app.add_middleware(SecurityHeadersMiddleware)
 
     # ── Static files ───────────────────────────────────────────────────
     app.mount("/static", StaticFiles(directory="static"), name="static")

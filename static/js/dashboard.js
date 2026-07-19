@@ -26,6 +26,11 @@
   const analyzeBtn = document.getElementById("analyze-btn");
   const lastUpdated = document.getElementById("last-updated");
 
+  // Ops Chat
+  const opsChatForm = document.getElementById("ops-chat-form");
+  const opsChatInput = document.getElementById("ops-chat-input");
+  const opsChatMessages = document.getElementById("ops-chat-messages");
+
   let currentStadium = "metlife";
   let pollInterval = null;
 
@@ -233,6 +238,50 @@
   });
 
   analyzeBtn.addEventListener("click", analyzeConditions);
+
+  // ── Ops Chat ──────────────────────────────────────────────
+  function addOpsChatMessage(text, role) {
+    var msgDiv = document.createElement("div");
+    msgDiv.className = "message message--" + role;
+    msgDiv.innerHTML = '<div class="message__bubble">' + escapeHtml(text) + '</div>';
+    opsChatMessages.appendChild(msgDiv);
+    opsChatMessages.scrollTop = opsChatMessages.scrollHeight;
+  }
+
+  opsChatForm.addEventListener("submit", async function(e) {
+    e.preventDefault();
+    var msg = opsChatInput.value.trim();
+    if (!msg) return;
+
+    opsChatInput.value = "";
+    opsChatInput.disabled = true;
+
+    // Add user message
+    addOpsChatMessage(msg, "user");
+
+    try {
+      const res = await fetch("/api/crowd/ops/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          message: msg,
+          stadium_id: currentStadium
+        })
+      });
+
+      if (!res.ok) throw new Error("Chat request failed");
+      const data = await res.json();
+      
+      // Add assistant response
+      addOpsChatMessage(data.reply, "assistant");
+    } catch (err) {
+      console.error(err);
+      addOpsChatMessage("Sorry, I am having trouble connecting to the network.", "assistant");
+    } finally {
+      opsChatInput.disabled = false;
+      opsChatInput.focus();
+    }
+  });
 
   // Keyboard shortcut: R to refresh
   document.addEventListener("keydown", function (e) {

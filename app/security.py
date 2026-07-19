@@ -12,7 +12,7 @@ from __future__ import annotations
 
 import re
 import unicodedata
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from slowapi import Limiter
 from slowapi.util import get_remote_address
@@ -79,8 +79,7 @@ def sanitize_input(text: str, max_length: int = MAX_INPUT_LENGTH) -> str:
 
     # Remove control characters except \n and \t
     text = "".join(
-        ch for ch in text
-        if ch in ("\n", "\t") or not unicodedata.category(ch).startswith("C")
+        ch for ch in text if ch in ("\n", "\t") or not unicodedata.category(ch).startswith("C")
     )
 
     # Normalize Unicode (prevent homoglyph spoofing)
@@ -177,3 +176,31 @@ def get_rate_limit_key(request: Any) -> str:
         Client IP address string.
     """
     return get_remote_address(request)
+
+
+from starlette.middleware.base import BaseHTTPMiddleware
+
+if TYPE_CHECKING:
+    from starlette.requests import Request
+    from starlette.responses import Response
+
+
+class SecurityHeadersMiddleware(BaseHTTPMiddleware):
+    """Middleware that adds standard security headers to every response."""
+
+    async def dispatch(self, request: Request, call_next: Any) -> Response:
+        """Process the request and attach security headers to the response.
+
+        Args:
+            request: The incoming request.
+            call_next: The next handler in the chain.
+
+        Returns:
+            The HTTP response with security headers attached.
+        """
+        response = await call_next(request)
+        response.headers["X-Content-Type-Options"] = "nosniff"
+        response.headers["X-Frame-Options"] = "DENY"
+        response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+        response.headers["X-XSS-Protection"] = "1; mode=block"
+        return response

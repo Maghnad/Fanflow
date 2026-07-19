@@ -8,7 +8,7 @@ No business logic here — all work is delegated to ``chat_service``.
 
 from __future__ import annotations
 
-from collections.abc import AsyncIterator
+from typing import TYPE_CHECKING
 
 from fastapi import APIRouter, Request
 from fastapi.responses import StreamingResponse
@@ -16,6 +16,9 @@ from fastapi.responses import StreamingResponse
 from app.schemas import ChatRequest, ChatResponse
 from app.security import limiter
 from app.services import chat_service
+
+if TYPE_CHECKING:
+    from collections.abc import AsyncIterator
 
 router = APIRouter(prefix="/api/chat", tags=["chat"])
 

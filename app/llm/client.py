@@ -18,7 +18,7 @@ from __future__ import annotations
 import hashlib
 import logging
 from collections import OrderedDict
-from collections.abc import AsyncIterator
+from typing import TYPE_CHECKING
 
 import httpx
 
@@ -29,6 +29,9 @@ from app.security import (
     sanitize_input,
     sanitize_llm_output,
 )
+
+if TYPE_CHECKING:
+    from collections.abc import AsyncIterator
 
 logger = logging.getLogger(__name__)
 
@@ -224,7 +227,9 @@ async def generate(
             data = response.json()
             raw_text: str = data["choices"][0]["message"]["content"]
         except httpx.HTTPStatusError as e:
-            logger.error(f"LLM API call failed with HTTP {e.response.status_code}: {e.response.text}")
+            logger.error(
+                f"LLM API call failed with HTTP {e.response.status_code}: {e.response.text}"
+            )
             return _FALLBACK_RESPONSE
         except Exception:
             logger.exception("LLM API call failed.")
@@ -292,7 +297,7 @@ async def generate_stream(
                 temperature=kwargs.get("temperature", 0.7),
                 max_output_tokens=kwargs.get("max_tokens", 1024),
             )
-            response_stream = await client.aio.models.generate_content_stream(
+            response_stream = client.aio.models.generate_content_stream(
                 model=settings.llm_model,
                 contents=contents,
                 config=config,
@@ -339,7 +344,9 @@ async def generate_stream(
                     except (ValueError, KeyError, IndexError):
                         continue
         except httpx.HTTPStatusError as e:
-            logger.error(f"LLM streaming call failed with HTTP {e.response.status_code}: {e.response.text}")
+            logger.error(
+                f"LLM streaming call failed with HTTP {e.response.status_code}: {e.response.text}"
+            )
             yield _FALLBACK_RESPONSE
         except Exception:
             logger.exception("LLM streaming call failed.")

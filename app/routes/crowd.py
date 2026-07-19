@@ -9,7 +9,13 @@ from __future__ import annotations
 
 from fastapi import APIRouter, HTTPException, Request
 
-from app.schemas import CrowdAnalysisRequest, CrowdAnalysisResponse, CrowdStatusResponse
+from app.schemas import (
+    CrowdAnalysisRequest,
+    CrowdAnalysisResponse,
+    CrowdStatusResponse,
+    OpsChatRequest,
+    OpsChatResponse,
+)
 from app.security import limiter
 from app.services import crowd_service
 
@@ -84,3 +90,29 @@ async def crowd_incidents(request: Request, stadium_id: str = "metlife") -> list
         raise HTTPException(status_code=404, detail=str(exc)) from exc
 
     return [inc.model_dump() for inc in status.incidents]
+
+
+@router.post(
+    "/ops/chat",
+    response_model=OpsChatResponse,
+    summary="Chat with the Operations Copilot",
+)
+@limiter.limit("20/minute")
+async def ops_chat_endpoint(
+    request: Request,
+    body: OpsChatRequest,
+) -> OpsChatResponse:
+    """Chat with the AI Ops Copilot using real-time data context.
+
+    Args:
+        request: FastAPI request.
+        body: OpsChatRequest with message and stadium_id.
+
+    Returns:
+        OpsChatResponse with the AI's reply.
+    """
+    try:
+        reply = await crowd_service.ops_chat(body.stadium_id, body.message)
+        return OpsChatResponse(reply=reply)
+    except ValueError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc

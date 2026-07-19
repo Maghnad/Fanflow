@@ -68,6 +68,7 @@ def get_settings() -> Settings:
     if settings.use_secret_manager and settings.gcp_project_id:
         try:
             from google.cloud import secretmanager
+
             client = secretmanager.SecretManagerServiceClient()
             name = f"projects/{settings.gcp_project_id}/secrets/{settings.gcp_secret_name}/versions/latest"
             response = client.access_secret_version(request={"name": name})

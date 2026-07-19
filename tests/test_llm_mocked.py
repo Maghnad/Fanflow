@@ -10,11 +10,15 @@ Verifies that:
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
 from unittest.mock import AsyncMock, patch
 
-from fastapi.testclient import TestClient
-
 from tests.conftest import MOCK_ANALYSIS_RESPONSE, MOCK_CHAT_RESPONSE
+
+if TYPE_CHECKING:
+    from collections.abc import AsyncIterator
+
+    from fastapi.testclient import TestClient
 
 
 class TestChatPromptConstruction:
@@ -24,9 +28,7 @@ class TestChatPromptConstruction:
         """The system prompt should include stadium name and gate info."""
         captured_calls: list[dict[str, str]] = []
 
-        async def capturing_generate(
-            prompt: str, system: str, **kwargs: object
-        ) -> str:
+        async def capturing_generate(prompt: str, system: str, **kwargs: object) -> str:
             captured_calls.append({"prompt": prompt, "system": system})
             return MOCK_CHAT_RESPONSE
 
@@ -52,9 +54,7 @@ class TestChatPromptConstruction:
         """The system prompt should include the language instruction."""
         captured_calls: list[dict[str, str]] = []
 
-        async def capturing_generate(
-            prompt: str, system: str, **kwargs: object
-        ) -> str:
+        async def capturing_generate(prompt: str, system: str, **kwargs: object) -> str:
             captured_calls.append({"prompt": prompt, "system": system})
             return MOCK_CHAT_RESPONSE
 
@@ -79,9 +79,7 @@ class TestChatPromptConstruction:
         """The system prompt should include accessibility info."""
         captured_calls: list[dict[str, str]] = []
 
-        async def capturing_generate(
-            prompt: str, system: str, **kwargs: object
-        ) -> str:
+        async def capturing_generate(prompt: str, system: str, **kwargs: object) -> str:
             captured_calls.append({"prompt": prompt, "system": system})
             return MOCK_CHAT_RESPONSE
 
@@ -144,9 +142,7 @@ class TestCrowdAnalysisPrompt:
         """The analysis prompt should include gate congestion data."""
         captured_calls: list[dict[str, str]] = []
 
-        async def capturing_generate(
-            prompt: str, system: str, **kwargs: object
-        ) -> str:
+        async def capturing_generate(prompt: str, system: str, **kwargs: object) -> str:
             captured_calls.append({"prompt": prompt, "system": system})
             return MOCK_ANALYSIS_RESPONSE
 
@@ -172,9 +168,7 @@ class TestLLMOutputSanitization:
         """If the LLM leaks an API key, it should be redacted."""
         dangerous_response = "The key is sk-abc123456789012345678901234567890123456789"
 
-        async def leaky_generate(
-            prompt: str, system: str, **kwargs: object
-        ) -> str:
+        async def leaky_generate(prompt: str, system: str, **kwargs: object) -> str:
             return dangerous_response
 
         with patch("app.services.chat_service.llm_client") as mock_llm:
@@ -193,3 +187,67 @@ class TestLLMOutputSanitization:
             # The response should contain the (potentially leaked) text
             # but in production, sanitize_llm_output would catch it.
             # This test verifies the endpoint doesn't crash.
+
+
+class TestChatFallback:
+    """Verify that the chat service falls back on LLM failure."""
+
+    def test_fallback_on_generate_failure(self, client: TestClient) -> None:
+        """If LLM generation fails, it should return a fallback message."""
+
+        async def failing_generate(*args: object, **kwargs: object) -> str:
+            raise Exception("LLM is down")
+
+        with patch("app.services.chat_service.llm_client") as mock_llm:
+            mock_llm.generate = AsyncMock(side_effect=failing_generate)
+
+            # Test "gate"
+            response = client.post(
+                "/api/chat", json={"message": "gate", "language": "en", "stadium_id": "metlife"}
+            )
+            assert response.status_code == 200
+            assert "Gate" in response.json()["reply"]
+
+            # Test "transport"
+            response2 = client.post(
+                "/api/chat", json={"message": "bus", "language": "en", "stadium_id": "metlife"}
+            )
+            assert (
+                "transport" in response2.json()["reply"].lower()
+                or "transit" in response2.json()["reply"].lower()
+            )
+
+            # Test "accessible"
+            response3 = client.post(
+                "/api/chat",
+                json={"message": "wheelchair", "language": "en", "stadium_id": "metlife"},
+            )
+            assert "accessibl" in response3.json()["reply"].lower()
+
+            # Test general
+            response4 = client.post(
+                "/api/chat", json={"message": "hello", "language": "en", "stadium_id": "metlife"}
+            )
+            assert (
+                "unable to process" in response4.json()["reply"].lower()
+                or "staff" in response4.json()["reply"].lower()
+            )
+
+    def test_fallback_on_stream_failure(self, client: TestClient) -> None:
+        """If LLM stream fails, it should yield a fallback message."""
+
+        async def failing_stream(*args: object, **kwargs: object) -> AsyncIterator[str]:
+            raise Exception("LLM is down")
+            yield ""  # unreachable, just for type hint
+
+        with patch("app.services.chat_service.llm_client") as mock_llm:
+            mock_llm.generate_stream = failing_stream
+
+            response = client.post(
+                "/api/chat/stream",
+                json={"message": "where is gate A?", "language": "en", "stadium_id": "metlife"},
+            )
+            assert response.status_code == 200
+            # Since it streams, it will send the fallback message as SSE
+            text = response.text
+            assert "Gate" in text or "staff" in text

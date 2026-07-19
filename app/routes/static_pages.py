@@ -30,9 +30,7 @@ async def fan_page(request: Request) -> HTMLResponse:
     """
     settings = get_settings()
     return templates.TemplateResponse(
-        request=request,
-        name="fan.html",
-        context={"maps_api_key": settings.gcp_maps_api_key}
+        request=request, name="fan.html", context={"maps_api_key": settings.gcp_maps_api_key}
     )
 
 

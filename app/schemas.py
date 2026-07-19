@@ -46,8 +46,7 @@ class ChatRequest(BaseModel):
         """Ensure the language code is supported."""
         if v not in SUPPORTED_LANGUAGES:
             raise ValueError(
-                f"Unsupported language '{v}'. "
-                f"Supported: {', '.join(SUPPORTED_LANGUAGES)}"
+                f"Unsupported language '{v}'. Supported: {', '.join(SUPPORTED_LANGUAGES)}"
             )
         return v
 
@@ -209,6 +208,7 @@ class CrowdStatusResponse(BaseModel):
     overall_status: str
     gates: list[GateStatus]
     incidents: list[IncidentReport]
+    waste_levels: dict[str, float] = Field(default_factory=dict)
     last_updated: str
 
 
@@ -246,3 +246,42 @@ class CrowdAnalysisResponse(BaseModel):
     stadium_id: str
     analysis: str
     recommendations: list[str]
+
+
+class OpsChatRequest(BaseModel):
+    """Request body for the ops chat copilot endpoint.
+
+    Attributes:
+        message: The staff member's query.
+        stadium_id: Stadium identifier.
+    """
+
+    message: str = Field(
+        ...,
+        min_length=1,
+        max_length=1000,
+        description="User query",
+    )
+    stadium_id: str = Field(
+        default="metlife",
+        description="Stadium identifier",
+    )
+
+    @field_validator("stadium_id")
+    @classmethod
+    def validate_stadium_id(cls, v: str) -> str:
+        """Ensure the stadium_id is lowercase alphanumeric."""
+        v = v.lower().strip()
+        if not v.isalnum():
+            raise ValueError("Stadium ID must be alphanumeric.")
+        return v
+
+
+class OpsChatResponse(BaseModel):
+    """Response body for the ops chat copilot endpoint.
+
+    Attributes:
+        reply: AI-generated response text based on real-time data.
+    """
+
+    reply: str

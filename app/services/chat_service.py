@@ -9,7 +9,7 @@ route layer only validates input and returns the response.
 from __future__ import annotations
 
 import re
-from collections.abc import AsyncIterator
+from typing import TYPE_CHECKING
 
 from app.config import get_settings
 from app.data.accessibility import get_accessibility, get_quiet_zones, get_sign_language_info
@@ -17,6 +17,9 @@ from app.data.stadiums import get_stadium
 from app.data.translations import get_language_instruction
 from app.llm import client as llm_client
 from app.services.crowd_service import get_crowd_status
+
+if TYPE_CHECKING:
+    from collections.abc import AsyncIterator
 
 # ---------------------------------------------------------------------------
 # System prompt template
@@ -57,16 +60,13 @@ def _build_stadium_context(stadium_id: str) -> str:
     if stadium is None:
         return "No specific stadium selected."
 
-    gates_info = ", ".join(
-        f"{g['name']} ({g['zone']})" for g in stadium["gates"].values()
-    )
+    gates_info = ", ".join(f"{g['name']} ({g['zone']})" for g in stadium["gates"].values())
     transport_info = "; ".join(
         f"{t['name']} ({t['type']}, {t['distance_meters']}m away — {t['directions']})"
         for t in stadium["transport"]
     )
     sections_info = ", ".join(
-        f"Section {s}: Gates {', '.join(gates)}"
-        for s, gates in stadium["sections"].items()
+        f"Section {s}: Gates {', '.join(gates)}" for s, gates in stadium["sections"].items()
     )
 
     return (
@@ -96,14 +96,15 @@ def _build_accessibility_context(stadium_id: str) -> str:
 
     quiet_info = (
         "; ".join(f"{q['name']} near {q['nearest_gate']} (capacity {q['capacity']})" for q in quiet)
-        if quiet else "None listed"
+        if quiet
+        else "None listed"
     )
     sign_info = (
         "; ".join(
-            f"{s['location']} — {', '.join(s['languages'])} ({s['hours']})"
-            for s in sign_lang
+            f"{s['location']} — {', '.join(s['languages'])} ({s['hours']})" for s in sign_lang
         )
-        if sign_lang else "None listed"
+        if sign_lang
+        else "None listed"
     )
 
     return (
@@ -151,9 +152,11 @@ def _get_intelligent_fallback(message: str, stadium_id: str) -> str | None:
 
     if re.search(r"wheelchair|accessible|accessibility|ramp|elevator", msg_lower):
         if acc:
-            return (f"Accessible routes use ramps and elevators only. "
-                    f"Wheelchair sections: {', '.join(acc['wheelchair_sections'])}. "
-                    f"Service animal relief areas: {', '.join(acc['service_animal_relief'])}.")
+            return (
+                f"Accessible routes use ramps and elevators only. "
+                f"Wheelchair sections: {', '.join(acc['wheelchair_sections'])}. "
+                f"Service animal relief areas: {', '.join(acc['service_animal_relief'])}."
+            )
         return "Accessible routes use ramps and elevators only. Please ask staff for assistance."
 
     if re.search(r"quiet|sensory|calm|loud", msg_lower):
@@ -169,8 +172,7 @@ def _get_intelligent_fallback(message: str, stadium_id: str) -> str | None:
     if re.search(r"transport|bus|train|metro|subway|parking", msg_lower):
         if stadium:
             transport_info = "; ".join(
-                f"{t['name']} ({t['distance_meters']}m away)"
-                for t in stadium["transport"]
+                f"{t['name']} ({t['distance_meters']}m away)" for t in stadium["transport"]
             )
             return f"Transport options: {transport_info}."
         return "Please check the venue maps for transport and parking information."
@@ -184,9 +186,11 @@ def _get_intelligent_fallback(message: str, stadium_id: str) -> str | None:
     if re.search(r"crowd|busy|congestion|wait|line|status", msg_lower):
         try:
             status = get_crowd_status(stadium_id)
-            return (f"Current crowd condition at {status.stadium_name}: "
-                    f"{status.overall_density_pct}% density ({status.overall_status.upper()}). "
-                    f"Check the Staff Dashboard for live gate-by-gate updates.")
+            return (
+                f"Current crowd condition at {status.stadium_name}: "
+                f"{status.overall_density_pct}% density ({status.overall_status.upper()}). "
+                f"Check the Staff Dashboard for live gate-by-gate updates."
+            )
         except Exception:
             return "Crowd condition is currently unavailable."
 
@@ -220,7 +224,13 @@ async def get_chat_response(
             return fallback
 
     system_prompt = _build_system_prompt(stadium_id, language)
-    return await llm_client.generate(prompt=message, system=system_prompt)
+    try:
+        return await llm_client.generate(prompt=message, system=system_prompt)
+    except Exception:
+        fallback = _get_intelligent_fallback(message, stadium_id)
+        if fallback:
+            return fallback
+        return "I'm currently unable to connect to my AI backend. Please try again shortly, or ask a staff member for help."
 
 
 async def stream_chat_response(
@@ -249,5 +259,14 @@ async def stream_chat_response(
             return
 
     system_prompt = _build_system_prompt(stadium_id, language)
-    async for token in llm_client.generate_stream(prompt=message, system=system_prompt):
-        yield token
+    try:
+        async for token in llm_client.generate_stream(prompt=message, system=system_prompt):
+            yield token
+    except Exception:
+        fallback = _get_intelligent_fallback(message, stadium_id)
+        if fallback:
+            words = fallback.split()
+            for word in words:
+                yield word + " "
+        else:
+            yield "I'm currently unable to connect to my AI backend. Please try again shortly."

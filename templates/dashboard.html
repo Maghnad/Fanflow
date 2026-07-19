@@ -139,6 +139,27 @@
       </button>
     </section>
 
+    <!-- Ops Copilot Chat Panel -->
+    <section class="panel-section" aria-label="Operations Copilot Chat">
+      <h2 class="panel-section__title">
+        <span aria-hidden="true">💬</span>
+        Ops Copilot
+      </h2>
+      <div class="panel-section__content ops-chat-container">
+        <div class="ops-chat-messages" id="ops-chat-messages" aria-live="polite">
+          <div class="message message--assistant">
+            <div class="message__bubble">
+              Hello. I am your AI Operations Copilot. You can ask me questions about the current crowd status, incidents, or waste bin levels.
+            </div>
+          </div>
+        </div>
+        <form class="ops-chat-form" id="ops-chat-form">
+          <input type="text" id="ops-chat-input" class="ops-chat-input" placeholder="e.g. Which gate is most congested?" aria-label="Copilot query" required>
+          <button type="submit" class="btn btn--primary" aria-label="Send query">Send</button>
+        </form>
+      </div>
+    </section>
+
   </main>
 
   <!-- ═══ Footer ═══ -->

@@ -6,7 +6,10 @@ All tests use the mock LLM from conftest — no real API calls.
 
 from __future__ import annotations
 
-from fastapi.testclient import TestClient
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from fastapi.testclient import TestClient
 
 
 class TestChatEndpoints:
@@ -16,7 +19,11 @@ class TestChatEndpoints:
         """POST /api/chat with valid input returns 200 and a reply."""
         response = client.post(
             "/api/chat",
-            json={"message": "Where is the nearest restroom?", "language": "en", "stadium_id": "metlife"},
+            json={
+                "message": "Where is the nearest restroom?",
+                "language": "en",
+                "stadium_id": "metlife",
+            },
         )
         assert response.status_code == 200
         data = response.json()
