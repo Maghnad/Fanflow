@@ -9,8 +9,6 @@ GET  /api/translations/{lang} — UI strings for a language
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
-
 from fastapi import APIRouter, HTTPException, Request
 
 from app.data.stadiums import TransportHub  # noqa: TC001

@@ -13,7 +13,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 if TYPE_CHECKING:
-    from collections.abc import AsyncIterator
+    from collections.abc import AsyncIterator, Generator
 
 # ---------------------------------------------------------------------------
 # Mock LLM responses
@@ -95,7 +95,7 @@ async def mock_generate_stream(
 
 
 @pytest.fixture()
-def client() -> TestClient:
+def client() -> Generator[TestClient, None, None]:
     """Create a TestClient with mock LLM injected.
 
     Returns:

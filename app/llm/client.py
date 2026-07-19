@@ -187,9 +187,10 @@ async def generate(
     raw_text: str = ""
     if settings.llm_provider == "google-sdk":  # pragma: no cover
         try:
+            from typing import cast
+
             from google import genai
             from google.genai import types
-            from typing import cast
 
             client = genai.Client(api_key=settings.llm_api_key)
             contents = [types.Content(role="user", parts=[types.Part.from_text(text=clean_prompt)])]
@@ -242,7 +243,7 @@ async def generate(
 
     # Cache the result
     if use_cache:
-        _cache_put(key, result)  # type: ignore[arg-type]
+        _cache_put(key, result)
 
     return result
 
@@ -289,9 +290,10 @@ async def generate_stream(
 
     if settings.llm_provider == "google-sdk":  # pragma: no cover
         try:
+            from typing import cast
+
             from google import genai
             from google.genai import types
-            from typing import cast
 
             client = genai.Client(api_key=settings.llm_api_key)
             contents = [types.Content(role="user", parts=[types.Part.from_text(text=clean_prompt)])]

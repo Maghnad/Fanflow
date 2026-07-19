@@ -23,6 +23,7 @@
   const incidentsEmpty = document.getElementById("incidents-empty");
   const recommendationsFeed = document.getElementById("recommendations-feed");
   const recommendationsEmpty = document.getElementById("recommendations-empty");
+  const wasteGrid = document.getElementById("waste-grid");
   const analyzeBtn = document.getElementById("analyze-btn");
   const lastUpdated = document.getElementById("last-updated");
 
@@ -87,6 +88,11 @@
     // Gate cards
     renderGates(data.gates);
 
+    // Waste / Sustainability
+    if (data.waste_levels && wasteGrid) {
+      renderWaste(data.waste_levels);
+    }
+
     // Incidents
     renderIncidents(data.incidents);
   }
@@ -114,6 +120,36 @@
         '<div class="gate-card__pct">' + gate.congestion_pct.toFixed(1) + '%</div>';
 
       gatesGrid.appendChild(card);
+    });
+  }
+
+  function renderWaste(wasteLevels) {
+    if (!wasteGrid) return;
+    wasteGrid.innerHTML = "";
+    Object.keys(wasteLevels).forEach(function (zone) {
+      var pct = wasteLevels[zone];
+      var status = pct >= 80 ? "red" : (pct >= 60 ? "yellow" : "green");
+      
+      var card = document.createElement("article");
+      card.className = "gate-card gate-card--" + status;
+      card.setAttribute("role", "listitem");
+      card.setAttribute("aria-label", "Waste bin " + zone + ": " + pct.toFixed(1) + "% full");
+
+      card.innerHTML =
+        '<div class="gate-card__header">' +
+          '<span class="gate-card__name">' + escapeHtml(zone) + '</span>' +
+          '<span class="badge badge--' + status + '">' +
+            '<span class="badge__dot" aria-hidden="true"></span>' +
+            status.toUpperCase() +
+          '</span>' +
+        '</div>' +
+        '<div class="gate-card__zone">Waste / Recycling</div>' +
+        '<div class="gate-card__meter" role="progressbar" aria-valuenow="' + pct.toFixed(0) + '" aria-valuemin="0" aria-valuemax="100" aria-label="Fill level">' +
+          '<div class="gate-card__meter-fill" style="width: ' + Math.min(pct, 100).toFixed(0) + '%"></div>' +
+        '</div>' +
+        '<div class="gate-card__pct">' + pct.toFixed(1) + '%</div>';
+
+      wasteGrid.appendChild(card);
     });
   }
 
